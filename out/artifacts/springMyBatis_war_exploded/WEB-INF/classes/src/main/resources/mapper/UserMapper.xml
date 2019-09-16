@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--<mapper namespace="com.bdqn.dao.user.UserMapper">-->
+<mapper namespace="com.bdqn.dao.UserMapper">
+
+    <!-- 查询用户表记录数 -->
+    <select id="selectCount" resultType="int">
+		select count(1) as count from `smbms_user`
+	</select>
+    <!--自定义用户映射结果-->
+    <resultMap id="roleList" type="Role">
+        <result column="role_id" property="id"/>
+        <result column="roleName" property="roleName"/>
+        <result column="roleCode" property="roleCode"/>
+    </resultMap>
+    <!--自定义用户映射结果-->
+    <resultMap id="userRoleList1" type="User">
+        <result column="id" property="id"/>
+        <result column="userCode" property="userCode"/>
+        <result column="userName" property="userName"/>
+        <result column="gender" property="gender"/>
+        <result column="phone" property="phone"/>
+        <result column="address" property="address"/>
+        <result column="birthday" property="birthday"/>
+        <!--<association property="role"  javaType="Role">-->
+        <collection property="role" ofType="Role" resultMap="roleList"/>
+        <!--<result column="role_id" property="id"/>
+        <result column="roleName" property="roleName"/>
+        <result column="roleCode" property="roleCode"/>-->
+    </resultMap>
+    <!--通过角色id查询到用户信息(角色信息) 数组入参-->
+    <select id="selectUserByUserRoleArray" resultMap="userRoleList1">
+        SELECT `u`.*,`r`.`id` as `role_id`,`r`.`roleName`,`r`.`roleCode` FROM `smbms_user` AS `u`
+        INNER JOIN `smbms_role` AS `r` ON `u`.userRole = `r`.`id`
+        WHERE `userRole` IN
+        <foreach collection="array" item="userRoles" open="(" separator="," close=")">
+            #{userRoles}
+        </foreach>
+    </select>
+
+    <!--添加用户-->
+    <insert id="insertUser">
+        INSERT INTO `smbms_user`
+        (`userCode`,
+        `userName`,
+        `userPassword`,
+        `gender`,
+        `birthday`,
+        `phone`,
+        `address`,
+        `userRole`,
+        `createdBy`,
+        `creationDate`)
+        <trim prefix="VALUES("  prefixOverrides="AND | OR"  suffix=")">
+            <if test="user.userCode!=null || user.userCode!=''">
+                #{user.userCode},
+            </if>
+            <if test="user.userName!=null || user.userName!=''">
+                #{user.userName},
+            </if>
+            <if test="user.userPassword!=null || user.userPassword!=''">
+                #{user.userPassword},
+            </if>
+            <if test="user.gender!=null">
+                #{user.gender},
+            </if>
+            <if test="user.birthday!=null">
+                #{user.birthday},
+            </if>
+            <if test="user.phone!=null || user.phone!=''">
+                #{user.phone},
+            </if>
+            <if test="user.address!=null || user.address!=''">
+                #{user.address},
+            </if>
+            <if test="user.userRole!=null ">
+                #{user.userRole},
+            </if>
+            <if test="user.createdBy!=null">
+                #{user.createdBy},
+            </if>
+            <if test="user.createdBy!=null">
+                #{user.creationDate}
+            </if>
+        </trim>
+    </insert>
+
+
+    <!-- 删除用户-->
+    <delete id="delUser">
+        DELETE  FROM `smbms_user`
+        WHERE `id` = #{uId}
+    </delete>
+
+    <!-- 查询某条用户数据 通过userCode和userPassword-->
+    <select id="selectUserByCodeAndPwd" resultType="User">
+        SELECT * FROM  `smbms_user`
+        <where>
+            <if test="userCode!=null and userCode!=''">
+                `userCode`=#{userCode}
+            </if>
+            <if test="userPassword!=null and userPassword!=''">
+                AND `userPassword`=#{userPassword}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询用户数据 -->
+    <!--<select id="selectUsers" resultType="com.bdqn.pojo.User">-->
+    <!--<select id="selectUsers" resultType="User">-->
+    <select id="selectUsers" resultMap="userRoleList1">
+        SELECT * FROM  `smbms_user` AS `u`
+		INNER JOIN `smbms_role` AS `r` ON `u`.userRole = `r`.`roleName`
+    </select>
+    <select id="selectfindRode" resultMap="userRoleList1">
+    SELECT * FROM  `smbms_user` AS `u`
+    INNER JOIN `smbms_role` AS `r` ON `u`.userRole = `r`.`id`
+    <trim prefix="WHERE " prefixOverrides="AND | OR">
+        <if test="queryUserRole!=null and queryUserRole!=''">
+            AND `u`.`userRole`=#{queryUserRole}
+        </if>
+        <if test="queryname!=null and queryname!=''">
+            AND `u`.`userName`
+            LIKE CONCAT('%', #{queryname},'%')
+        </if>
+    </trim>
+</select>
+<select id="selectUserByCode" resultType="User">
+    SELECT
+    *
+    FROM `smbms_user`
+    <where>
+        <if test="userCode!=null and userCode!=''">
+            `userCode`=#{userCode}
+        </if>
+    </where>
+</select>
+    <!--添加用户（包含新增的上传信息的字段）-->
+    <insert id="insertSelective" parameterType="User">
+        INSERT INTO `smbms_user`
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userCode != null">
+                userCode,
+            </if>
+            <if test="userName != null">
+                userName,
+            </if>
+            <if test="userPassword != null">
+                userPassword,
+            </if>
+            <if test="gender != null">
+                gender,
+            </if>
+            <if test="birthday != null">
+                birthday,
+            </if>
+            <if test="phone != null">
+                phone,
+            </if>
+            <if test="address != null">
+                address,
+            </if>
+            <if test="userRole != null">
+                userRole,
+            </if>
+            <if test="createdBy != null">
+                createdBy,
+            </if>
+            <if test="creationDate != null">
+                creationDate,
+            </if>
+            <if test="modifyBy != null">
+                modifyBy,
+            </if>
+            <if test="modifyDate != null">
+                modifyDate,
+            </if>
+            <if test="idPicPath != null">
+                idPicPath
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userCode != null">
+                #{userCode,jdbcType=VARCHAR},
+            </if>
+            <if test="userName != null">
+                #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="userPassword != null">
+                #{userPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="gender != null">
+                #{gender,jdbcType=INTEGER},
+            </if>
+            <if test="birthday != null">
+                #{birthday,jdbcType=DATE},
+            </if>
+            <if test="phone != null">
+                #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="address != null">
+                #{address,jdbcType=VARCHAR},
+            </if>
+            <if test="userRole != null">
+                #{userRole,jdbcType=BIGINT},
+            </if>
+            <if test="createdBy != null">
+                #{createdBy,jdbcType=BIGINT},
+            </if>
+            <if test="creationDate != null">
+                #{creationDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="modifyBy != null">
+                #{modifyBy,jdbcType=BIGINT},
+            </if>
+            <if test="modifyDate != null">
+                #{modifyDate,jdbcType=TIMESTAMP},
+            </if>
+            <if test="idPicPath != null">
+                #{idPicPath,jdbcType=VARCHAR}
+            </if>
+        </trim>
+    </insert>
+    <!-- 根据id查找用户信息-->
+    <select id="selectUserById" resultMap="userRoleList1">
+        SELECT
+        *
+        FROM `smbms_user` AS `u`
+        INNER JOIN `smbms_role` AS `r` ON `u`.userRole = `r`.`id`
+        <where>
+            <if test="userId!=null and userId!=''">
+                `u`.`id`= #{userId}
+            </if>
+        </where>
+    </select>
+    <!--数据库中修改用户信息 SET(,,,,) VALUES (,,,,);-->
+    <update id="updateUserByUser" parameterType="User">
+        UPDATE `smbms_user`
+        <set>
+            <if test="userCode  != null">
+                userCode = #{userCode,jdbcType=VARCHAR},
+            </if>
+            <if test="userName != null">
+                userName = #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="userPassword != null">
+                userPassword = #{userPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="gender != null">
+                gender = #{gender,jdbcType=INTEGER},
+            </if>
+            <if test="birthday != null">
+                birthday = #{birthday,jdbcType=DATE},
+            </if>
+            <if test="phone != null">
+                phone = #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="address != null">
+                address = #{address,jdbcType=VARCHAR},
+            </if>
+            <if test="userRole != null">
+                userRole = #{userRole,jdbcType=BIGINT},
+            </if>
+            <if test="createdBy != null">
+                createdBy = #{createdBy,jdbcType=BIGINT},
+            </if>
+            <if test="createdBy != null">
+                creationDate = #{createdBy,jdbcType=TIMESTAMP},
+            </if>
+            <if test="modifyBy != null">
+                modifyBy = #{modifyBy,jdbcType=BIGINT},
+            </if>
+            <if test="modifyDate != null">
+                modifyDate = #{modifyDate,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        <where>
+            <if test="id != null">
+                `id` = #{id,jdbcType=BIGINT}
+            </if>
+        </where>
+    </update>
+</mapper>
